@@ -1,0 +1,25 @@
+{
+	"name": "@repo/backend-common",
+	"version": "1.0.0",
+	"description": "",
+	"main": "index.js",
+	"type": "module",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"dependencies": {
+		"@repo/typescript-config": "workspace:*",
+		"@types/dotenv": "^8.2.3",
+		"@types/nodemailer": "^7.0.1",
+		"@types/redis": "^4.0.11",
+		"dotenv": "^17.2.1",
+		"nodemailer": "^7.0.6",
+		"redis": "^5.8.2"
+	},
+	"exports": {
+		"./*": "./src/*.ts"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC"
+}
