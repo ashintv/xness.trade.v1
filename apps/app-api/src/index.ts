@@ -22,9 +22,9 @@ app.get("/health", async (req, res) => {
 app.listen(3000,() => {
 	console.log(JWT_COOKIE_SECRET, JWT_SECRET);
 	setTimeout(async () => {
-		const id = await queueManager.addtoQueue("Server started started");
-		await queueManager.getQueueData((data) => {
-			console.log(data);
-		}, id);
-	}, 10 * 100);
+		// const id = await queueManager.addtoQueue("Server started started");
+		// await queueManager.getQueueData((data) => {
+		// 	console.log(data);
+		// }, id);
+	}, 5 * 1000);
 });

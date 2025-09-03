@@ -24,12 +24,13 @@ tradeRouter.post("/create", async (req, res) => {
 	const id = await queueManager.addtoQueue(
 		JSON.stringify({
 			userId,
-			open: parse,
+			type: "open_order",
+			data: parse.data,
 		})
 	);
 
-	await queueManager.getQueueData((data) => {
-		res.status(200).send("Order sucessfull");
+	await queueManager.getQueueData((data , orderId) => {
+		res.status(200).json({orderId});
 	}, id);
 });
 

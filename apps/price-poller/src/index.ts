@@ -1,15 +1,12 @@
 import { connectRedis } from "@repo/backend-common/redis";
+import { Latest_Price } from "@repo/types/types";
 import Websocket from "ws";
 const wss = new Websocket("wss://ws.backpack.exchange/");
 
-let data__: {
-	ETH_USDC: any;
-	BTC_USDC: any;
-	SOL_USDC: any;
-} = {
-	ETH_USDC: null,
-	BTC_USDC: null,
-	SOL_USDC: null,
+let data__: Latest_Price = {
+	ETH: null,
+	BTC: null,
+	SOL: null,
 };
 wss.on("open", () => {
 	console.log("Connectes");
@@ -23,7 +20,6 @@ wss.on("message", (message) => {
 	const parsed = JSON.parse(data);
 	console.log(parsed.data);
 	data__[parsed.data.s as keyof typeof data__] = {
-		asset: parsed.data.s.split("_")[0],
 		price: parsed.data.a,
 		decimal: 8,
 	};
@@ -32,7 +28,7 @@ wss.on("message", (message) => {
 async function startPublishing() {
 	const Pub = await connectRedis();
 	setInterval(async () => {
-		await Pub.xAdd('price_data' ,'*' ,{latest_prices:JSON.stringify(data__)})
+		await Pub.xAdd("price_data", "*", { latest_prices: JSON.stringify(data__) });
 	}, 100);
 }
-startPublishing()
+startPublishing();
