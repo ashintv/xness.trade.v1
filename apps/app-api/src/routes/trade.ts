@@ -1,44 +1,49 @@
 import { OpenTradeSchema } from "@repo/types/schemas";
-import express from "express";
+import express, { Router } from "express";
+import { queueManager } from "..";
 
-const tradeRouter = express.Router();
+export const tradeRouter: Router = express.Router();
 
-tradeRouter.post("create", async (req, res) => {
+tradeRouter.post("/create", async (req, res) => {
+	// asuusming user id will be this
+	// TODO meiidleware
+
+	res.setTimeout(10 * 1000, () => {
+		console.log("Timeout");
+		res.status(504).send("Timeout");
+	});
+
+	const userId = "ashintv";
 	const parse = OpenTradeSchema.safeParse(req.body);
 	if (!parse.success) {
 		res.status(400).json({
 			message: "invalid data",
 		});
 	}
-	// add to queue
-	// is it dequeue?
-	// how does api can confirm
-	//
-    /**
-     * if we are using full duplex queue: suppose n*1000 users are in the platform (creating orders) 
-     * doed thid duplex quee arch teacture effect the performance ( fast )
-     */
-	// or just add to que and send response??
 
-	res.json({
-		orderId: "this should be an orderId",
-	});
+	const id = await queueManager.addtoQueue(
+		JSON.stringify({
+			userId,
+			open: parse,
+		})
+	);
+
+	await queueManager.getQueueData((data) => {
+		res.status(200).send("Order sucessfull");
+	}, id);
 });
 
-tradeRouter.post("close", (req, res) => {
-    const {orderId } = req.body
-    if(!orderId){
-        res.status(400).json({
-            message:"No orderId provided"
-        })
-    }
-    //again push to que 
-    //how does api know updated balce after engin process
+tradeRouter.post("/close", (req, res) => {
+	const { orderId } = req.body;
+	if (!orderId) {
+		res.status(400).json({
+			message: "No orderId provided",
+		});
+	}
+	//again push to que
+	//how does api know updated balce after engin process
 
-
-
-    res.json({
-        balance:999
-    })
-
- });
+	res.json({
+		balance: 999,
+	});
+});

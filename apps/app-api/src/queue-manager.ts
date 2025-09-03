@@ -8,23 +8,28 @@ export class QueueManager {
 		this.init();
 	}
 	private async init() {
-		if (!this.client.isOpen) {
-			await this.client.connect();
-		}
 		try {
-			await this.client.xGroupCreate("trades_data", "engine_group", "0", { MKSTREAM: true });
-		} catch (err: any) {
-			if (err?.message?.includes("BUSYGROUP")) {
-				console.log("Group already exists, skipping creation");
-			} else {
-				throw err;
-			}
+			await this.client.connect();
+		} catch (e) {
+			console.log(e);
 		}
-		this.testQueue();
 	}
-	async addtoQueue(message: string) {
-		const res = await this.client.xAdd("trades_data", "*", { message });
-		console.log(res);
+	async addtoQueue(message: string): Promise<string> {
+		const res = await this.client.xAdd("engine_jobs", "*", { message });
+		console.log('mesasdasd')
+		return res;
+	}
+
+	async getQueueData(callback: (data: any) => void ,  id:string) {
+		let msg_id:string | null = null
+		while (msg_id!==id) {
+			const stream = await this.client.xRead([{ key: "engin_stream", id: "$" } ], { BLOCK: 0, COUNT: 1 });
+			if (stream && stream[0]) {
+				const data = stream[0].messages[0]?.message;
+				msg_id = data?.res_id!
+			}
+			callback(stream);
+		}
 	}
 
 	private testQueue() {

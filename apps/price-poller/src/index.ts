@@ -32,8 +32,7 @@ wss.on("message", (message) => {
 async function startPublishing() {
 	const Pub = await connectRedis();
 	setInterval(async () => {
-		await Pub.publish("backpack", JSON.stringify({ updated_prices: data__ }));
-		console.log("Data Updated");
+		await Pub.xAdd('price_data' ,'*' ,{latest_prices:JSON.stringify(data__)})
 	}, 100);
 }
 startPublishing()

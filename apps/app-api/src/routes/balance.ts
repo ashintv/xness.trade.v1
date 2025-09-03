@@ -1,13 +1,11 @@
 
 import express from "express";
-
 const balanceRouter = express.Router();
 
 balanceRouter.get("/usd", async (req, res) => {
-    //user id from middleware
+	// asuusming user id will be this
+	// TODO meiidleware
 	const userId = 'adfsjkjb'
-	
-	
 	res.json({
 		balance:"adsn" //  usd balance
 	});

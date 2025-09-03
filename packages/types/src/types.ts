@@ -1,4 +1,4 @@
-import { AssetScheam, TradeSchema } from "./schemas";
+import { AssetScheam, TradeSchema } from "./schemas.js";
 import { z } from "zod";
 
 export type TODO = any;
