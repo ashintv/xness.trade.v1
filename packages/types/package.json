@@ -7,7 +7,8 @@
 		"test": "echo \"Error: no test specified\" && exit 1"
 	},
 	"dependencies": {
-		"@repo/typescript-config": "workspace:*"
+		"@repo/typescript-config": "workspace:*",
+		"zod": "^4.1.5"
 	},
 	"exports": {
 		"./*": "./src/*.ts"
