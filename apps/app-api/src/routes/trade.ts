@@ -1,3 +1,4 @@
+import { OpenOrder, UserRequest } from "@repo/types/types";
 import { OpenTradeSchema } from "@repo/types/schemas";
 import express, { Router } from "express";
 import { queueManager } from "..";
@@ -8,12 +9,7 @@ tradeRouter.post("/create", async (req, res) => {
 	// asuusming user id will be this
 	// TODO meiidleware
 
-	res.setTimeout(10 * 1000, () => {
-		console.log("Timeout");
-		res.status(504).send("Timeout");
-	});
-
-	const userId = "ashintv";
+	const username = "ashintv";
 	const parse = OpenTradeSchema.safeParse(req.body);
 	if (!parse.success) {
 		res.status(400).json({
@@ -21,30 +17,40 @@ tradeRouter.post("/create", async (req, res) => {
 		});
 	}
 
-	const id = await queueManager.addtoQueue(
-		JSON.stringify({
-			userId,
-			type: "open_order",
-			data: parse.data,
-		})
-	);
-
-	await queueManager.getQueueData((data , orderId) => {
-		res.status(200).json({orderId});
-	}, id);
+	const input: UserRequest = {
+		req_type: "open_order",
+		username,
+		request: parse.data as OpenOrder,
+	};
+	const response = await queueManager.sendToEngine(input);
+	if (response) {
+		res.json({ response });
+		return;
+	}
+	res.status(404).send("Timeout");
 });
 
-tradeRouter.post("/close", (req, res) => {
+
+tradeRouter.post("/close", async (req, res) => {
+	res.setTimeout(10 * 1000, () => {
+		console.log("Timeout");
+		res.status(504).send("Timeout");
+	});
 	const { orderId } = req.body;
 	if (!orderId) {
 		res.status(400).json({
 			message: "No orderId provided",
 		});
+		return;
 	}
-	//again push to que
-	//how does api know updated balce after engin process
-
-	res.json({
-		balance: 999,
+	const response = await queueManager.sendToEngine({
+		req_type: "close_order",
+		username: "ashintv",
+		request: orderId,
 	});
+	if (response) {
+		res.json({ response });
+		return;
+	}
+	res.status(404).send("Timeout");
 });

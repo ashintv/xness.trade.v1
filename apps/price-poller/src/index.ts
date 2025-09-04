@@ -1,5 +1,5 @@
 import { connectRedis } from "@repo/backend-common/redis";
-import { Latest_Price } from "@repo/types/types";
+import { EngineInput, Latest_Price } from "@repo/types/types";
 import Websocket from "ws";
 const wss = new Websocket("wss://ws.backpack.exchange/");
 
@@ -18,8 +18,8 @@ wss.on("open", () => {
 wss.on("message", (message) => {
 	const data = message.toString();
 	const parsed = JSON.parse(data);
-	console.log(parsed.data);
-	data__[parsed.data.s as keyof typeof data__] = {
+	console.log(data__);
+	data__[parsed.data.s.split("_")[0] as keyof typeof data__] = {
 		price: parsed.data.a,
 		decimal: 8,
 	};
@@ -28,7 +28,14 @@ wss.on("message", (message) => {
 async function startPublishing() {
 	const Pub = await connectRedis();
 	setInterval(async () => {
+		const enginein: EngineInput = {
+			verify_id:crypto.randomUUID(),
+			type: "updated_price",
+			data: data__,
+	
+		};
 		await Pub.xAdd("price_data", "*", { latest_prices: JSON.stringify(data__) });
+		await Pub.xAdd("engine_input" ,'*' , {data:JSON.stringify(enginein)});
 	}, 100);
 }
 startPublishing();

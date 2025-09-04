@@ -1,93 +1,107 @@
 import { redisClient, RedisClientType } from "@repo/backend-common/redis";
-import { Latest_Price, OpenOrder, OpenOrders, TODO, UserBalance } from "@repo/types/types";
+import { EngineInput, Latest_Price, OpenOrder, OpenOrders, UserBalance, UserRequest } from "@repo/types/types";
+import { TradeManager } from "./tradeManager";
 
-class Engine {
+export class Engine_v2 {
 	private redisClient: RedisClientType;
-	private latest_prices: Latest_Price = null;
-	private openOrders: OpenOrders[] = [];
-	private user_balances: UserBalance = {
-		"ashintv":{
-			usd_balance:999999,
-		}
-	};
-
-	constructor() {
+	private resposeClient: RedisClientType;
+	private trademanager: TradeManager;
+	private response_id: string = "";
+	constructor(trademanager: TradeManager) {
 		this.redisClient = redisClient;
+		this.resposeClient = redisClient.duplicate();
+		this.trademanager = trademanager;
 		this.init();
 	}
-
 	private async init() {
-		try {
-			if (!this.redisClient.isOpen) await this.redisClient.connect();
-		} catch (e) {
-			console.error("Redis connection failed:", e);
-			return;
-		}
-
-		this.startPriceClient();
-		this.startEngine();
+		await this.redisClient.connect();
+		console.log("Engine Connnectes");
+		await this.resposeClient.connect();
+		await this.StartEngine();
 	}
-
-	private async openOrder(order: OpenOrder, username: string, id: string) {
-		if (!this.latest_prices) return;
-		const asset = order.asset;
-		if (!this.user_balances[username]) return;
-		const open_price = this.latest_prices[asset]?.price as number;
-		const qty = (order.margin * order.leverage) / open_price;
-		this.user_balances[username].usd_balance -= open_price;
-		this.user_balances[username][asset] = qty;
-		const order_id = crypto.randomUUID();
-		this.openOrders.push({
-			...order,
-			open_price,
-			username,
-			order_id,
-		});
-		await this.sendResponse({
-			req_id: id,
-			response: order_id,
-		});
-	}
-
-	private async startPriceClient() {
+	private async StartEngine() {
 		while (true) {
-			const stream = await this.redisClient.xRead([{ key: "price_data", id: "$" }], { BLOCK: 0, COUNT: 1 });
+			const stream = await this.redisClient.xRead([{ key: "engine_input", id: "$" }], { BLOCK: 0, COUNT: 1 });
 			if (stream && stream[0]) {
-				this.latest_prices = JSON.parse(stream[0].messages[0]?.message.latest_prices as string);
-			}
-		}
-	}
-
-	private async sendResponse(data: { req_id: string; response: string }) {
-		await this.redisClient.xAdd("engine_stream", "*", { data: JSON.stringify(data) });
-		console.log("response sended", data);
-	}
-
-	private async startEngine() {
-		while (true) {
-			console.log("Starting Engine");
-			try {
-				const stream = await this.redisClient.xRead([{ key: "engine_jobs", id: "$" }], { BLOCK: 0, COUNT: 1 });
-				if (stream && stream[0] && stream[0].messages[0] && stream[0].messages[0].id) {
-					const id = stream[0].messages[0].id;
-					const data = stream[0].messages[0].message.data;
-					if (!data) {
-						console.log("data not avl");
-						await this.redisClient.xAdd("engine_stream", "*", { res_id: id });
-						return;
-					}
-					const parsed = JSON.parse(data);
-					if (parsed.type == "open_order") {
-						console.log("open order");
-						this.openOrder(parsed.data as OpenOrder, parsed.userId, id);
-					}
+				const parse: EngineInput = JSON.parse(stream[0].messages[0]?.message.data as string);
+				if (parse.type == "updated_price") {
+					this.trademanager.updateLatestPrice(parse.data as Latest_Price);
+				} else {
+					this.response_id = parse.verify_id;
+					const request = parse.data as UserRequest;
+					await this.handleUser(request);
 				}
-			} catch (e) {
-				console.error("Engine loop error:", e);
-				await new Promise((r) => setTimeout(r, 1000));
 			}
 		}
+	}
+
+	/**
+	 * handles users_requests based on request type
+	 * @param request
+	 * @param id
+	 */
+	private async handleUser(request: UserRequest) {
+		console.log(request);
+		if (request.req_type == "open_order") {
+			const order_id = this.trademanager.openOrder(request.request as OpenOrder, request.username);
+			await this.sendResponse(order_id);
+		} else if (request.req_type == "close_order") {
+			const balance = this.trademanager.closeOrder(request.request as string, request.username);
+			await this.sendResponse(JSON.stringify(balance));
+		} else if (request.req_type == "get_balance") {
+			const balance = this.trademanager.getBalance(request.username);
+			await this.sendResponse(JSON.stringify(balance));
+		} else if (request.req_type == "add_user") {
+			const user = this.trademanager.createUser(request.username);
+			await this.sendResponse(JSON.stringify(user));
+		}
+	}
+
+	private async sendResponse(data: string) {
+		await this.resposeClient.xAdd("engine_stream", "*", {
+			data: JSON.stringify({
+				verify_id: this.response_id,
+				data,
+			}),
+		});
+		console.log("response sended", data);
 	}
 }
 
-const engine = new Engine();
+
+
+const tradeManager = new TradeManager(
+	[],
+	[
+		{
+			username: "ashintv",
+			usd_balance: 90909,
+		},
+	]
+);
+const enh = new Engine_v2(tradeManager);
+
+
+
+
+
+
+
+// [
+// 	{
+// 		username: "ashintv",
+// 		usd_balance: 90909,
+// 	},
+// ];
+
+//   type: 'user_request',
+//   data:
+//     req_type: 'open_order',
+//     username: 'ashintv',
+//     request:
+//       asset: 'BTC',
+//       type: 'long',
+//       margin: 1000,
+//       leverage: 5,
+//       slipage: 0.5
+

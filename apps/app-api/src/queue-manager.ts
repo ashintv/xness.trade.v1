@@ -1,47 +1,48 @@
 import { redisClient, RedisClientType } from "@repo/backend-common/redis";
-import { TODO } from "@repo/types/types";
+import { UserRequest } from "@repo/types/types";
 
 export class QueueManager {
-	private client: RedisClientType;
+	private writer: RedisClientType;
+	private reader: RedisClientType;
+	private last_id: string = "0";
 	constructor() {
-		this.client = redisClient;
+		this.writer = redisClient;
+		this.reader = redisClient.duplicate();
 		this.init();
 	}
 	private async init() {
 		try {
-			await this.client.connect();
+			await this.writer.connect();
+			await this.reader.connect();
 		} catch (e) {
 			console.log(e);
 		}
 	}
-	async addtoQueue(data: string): Promise<string> {
-		const res = await this.client.xAdd("engine_jobs", "*", { data });
-		console.log("ID is", res);
-		return res;
-	}
-
-	async getQueueData(callback: (data: any, orderId: string) => void, id: string) {
-		let msg_id: string | null = null;
-		let orderId = null;
-		while (msg_id !== id) {
-			const stream = await this.client.xRead([{ key: "engine_stream", id: "$" }], { BLOCK: 0, COUNT: 1 });
-			if (stream && stream[0]) {
-				console.log(stream[0].messages[0]?.message);
-				const response = stream[0].messages[0]?.message.data;
-				if (!response) return;
-				const parse = JSON.parse(response);
-				console.log(response);
-				console.log(parse);
-				msg_id = parse.req_id;
-				orderId = parse.response;
+	async sendToEngine(data: UserRequest): Promise<string | null> {
+		const verify_id = crypto.randomUUID();
+		this.writer.xAdd("engine_input", "*", { data: JSON.stringify({ verify_id, type: "user_request", data }) });
+		const start_time = Date.now();
+		const time_out = 3 * 1000;
+		while (true) {
+			if (Date.now() - start_time > time_out) {
+				return null;
 			}
-			callback(stream, orderId);
+			const stream = await this.reader.xRead([{ key: "engine_stream", id: "$" }], { BLOCK: 100, COUNT: 10 });
+			if (stream && stream[0]) {
+				const response = stream[0].messages[0]?.message.data;
+				if (!response) continue;
+				const parse = JSON.parse(response);
+				console.log(parse);
+				if (parse.verify_id == verify_id) {
+					return parse.data;
+				}
+			}
 		}
 	}
-
-	private testQueue() {
-		setInterval(() => {
-			this.addtoQueue("This is a test message from api-server");
-		}, 2 * 1000);
-	}
 }
+
+// private testQueue() {
+// 	setInterval(() => {
+// 		this.addtoQueue("This is a test message from api-server");
+// 	}, 2 * 1000);
+// }

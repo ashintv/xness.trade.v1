@@ -1,16 +1,25 @@
+import { UserRequest } from "@repo/types/types";
+import express, { Router } from "express";
+import { queueManager } from "..";
+export const balanceRouter: Router = express.Router();
 
-import express from "express";
-const balanceRouter = express.Router();
-
-balanceRouter.get("/usd", async (req, res) => {
+balanceRouter.get("/", async (req, res) => {
 	// asuusming user id will be this
 	// TODO meiidleware
-	const userId = 'adfsjkjb'
-	res.json({
-		balance:"adsn" //  usd balance
-	});
+	const verify_id = crypto.randomUUID();
+	const input: UserRequest = {
+		req_type: "get_balance",
+		username: "ashintv",
+		request: "",
+	};
+	const response = await queueManager.sendToEngine(input);
+	if (response) {
+		res.json({ response });
+		return;
+	}
 });
 
+// same workflow just parse ans send
 balanceRouter.post("/usd", (req, res) => {
 	const { orderId } = req.body;
 	if (!orderId) {
