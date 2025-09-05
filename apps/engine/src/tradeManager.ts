@@ -71,7 +71,7 @@ export class TradeManager {
 			slipage: slipage_int,
 			username,
 			open_price: price_int,
-			order_id: crypto.randomUUID(),
+			order_id,
 			quantity: qty_int,
 		});
 		console.log(`Created order ${qty_int} for user ${username}`);
@@ -83,7 +83,6 @@ export class TradeManager {
 			response_message: "Order opened successfully",
 		};
 	}
-
 
 	/**
 	 * create a user in the engine with initial balance
@@ -101,7 +100,6 @@ export class TradeManager {
 				response_message: "User already exists",
 			};
 		}
-		this.userBalances.push();
 		user = {
 			username,
 			usd_balance: "50000000",
@@ -141,6 +139,7 @@ export class TradeManager {
 	 */
 	updateLatestPrice(latest_Price: Latest_Price) {
 		this.latest_prices = latest_Price;
+		this.checkLiquidation();
 	}
 
 	/**
@@ -156,13 +155,9 @@ export class TradeManager {
 				response_message: "Invalid order Id or Market not available",
 			};
 		}
-
 		const close_price = BigInt(this.latest_prices[order.asset]?.price!);
-
 		const pnl_int = this.calculatePnL(BigInt(order.open_price), close_price, BigInt(order.quantity), order.type);
-
 		const user = this.userBalances.find((u) => u.username === username)!;
-
 		const new_balance = BigInt(user.usd_balance) + BigInt(order.margin) + pnl_int;
 		user.usd_balance = new_balance.toString();
 		this.openOrders = this.openOrders.filter((o) => o.order_id !== order_id);
@@ -191,7 +186,7 @@ export class TradeManager {
 		} else {
 			pnl_int = ((open_price - close_price) * qty_int) / DECIMAL_BASE;
 		}
-		return pnl_int; 
+		return pnl_int;
 	}
 
 	private getLiquidationPrice(
@@ -209,5 +204,30 @@ export class TradeManager {
 			liq_price_int = (price_int * (leverage_int + 10000n - maintMargin)) / leverage_int;
 		}
 		return liq_price_int;
+	}
+
+	private checkLiquidation() {
+		this.openOrders.forEach((order) => {
+			if (!this.latest_prices) return false;
+			const liq_price = this.getLiquidationPrice(BigInt(order.open_price), BigInt(order.leverage), order.type);
+			const current_price = BigInt(this.latest_prices[order.asset]?.price!);
+			if (
+				(order.type === "long" && current_price < liq_price) ||
+				(order.type === "short" && current_price > liq_price)
+			) {
+				this.closeOrder(order.order_id, order.username);
+			}
+		});
+	}
+
+	
+	getSnapshot() {
+		const snapshot = {
+			openOrders: this.openOrders,
+			userBalances: this.userBalances,
+			latestPrices: this.latest_prices,
+		};
+
+		return snapshot;
 	}
 }

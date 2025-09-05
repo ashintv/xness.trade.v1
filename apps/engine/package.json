@@ -8,13 +8,20 @@
 		"dev": "tsc -b && node dist/index.js"
 	},
 	"dependencies": {
-		"@repo/typescript-config": "workspace:*",
 		"@repo/backend-common": "workspace:*",
 		"@repo/types": "workspace:*",
-		"@repo/utils": "workspace:*"
+		"@repo/typescript-config": "workspace:*",
+		"@repo/utils": "workspace:*",
+		"mongoose": "^8.18.0"
 	},
 	"keywords": [],
 	"author": "",
 	"license": "ISC",
-	"type": "commonjs"
+	"type": "commonjs",
+	"devDependencies": {
+		"@types/node": "^22.15.3",
+		"@vitest/ui": "^3.2.4",
+		"typescript": "^5.9.2",
+		"vitest": "^3.2.4"
+	}
 }

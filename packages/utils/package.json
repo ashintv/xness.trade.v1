@@ -8,7 +8,8 @@
 	},
 	"keywords": [],
 	"dependencies": {
-		"@repo/typescript-config": "workspace:*"
+		"@repo/typescript-config": "workspace:*",
+		"vitest": "^3.2.4"
 	},
 	"exports": {
 		"./*": "./src/*.ts"

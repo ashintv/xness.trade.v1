@@ -8,7 +8,7 @@ import { balanceRouter } from "./routes/balance";
 
 
 export const queueManager = new QueueManager();
-const app = express();
+export const app: express.Express = express();
 
 app.use(cors());
 app.use(express.json());
