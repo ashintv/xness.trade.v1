@@ -1,6 +1,7 @@
 import { redisClient, RedisClientType } from "@repo/backend-common/redis";
-import { EngineInput, Latest_Price, OpenOrder, OpenOrders, UserBalance, UserRequest } from "@repo/types/types";
+import { EngineInput, EngineResponse, Latest_Price, OpenOrder, OpenOrders, UserBalance, UserRequest } from "@repo/types/types";
 import { TradeManager } from "./tradeManager";
+import { toBigIntValue } from "@repo/utils/decimal-covert";
 
 export class Engine_v2 {
 	private redisClient: RedisClientType;
@@ -47,17 +48,17 @@ export class Engine_v2 {
 			await this.sendResponse(order_id);
 		} else if (request.req_type == "close_order") {
 			const balance = this.trademanager.closeOrder(request.request as string, request.username);
-			await this.sendResponse(JSON.stringify(balance));
+			await this.sendResponse(balance);
 		} else if (request.req_type == "get_balance") {
 			const balance = this.trademanager.getBalance(request.username);
-			await this.sendResponse(JSON.stringify(balance));
+			await this.sendResponse(balance);
 		} else if (request.req_type == "add_user") {
 			const user = this.trademanager.createUser(request.username);
-			await this.sendResponse(JSON.stringify(user));
+			await this.sendResponse(user);
 		}
 	}
 
-	private async sendResponse(data: string) {
+	private async sendResponse(data: EngineResponse) {
 		await this.resposeClient.xAdd("engine_stream", "*", {
 			data: JSON.stringify({
 				verify_id: this.response_id,
@@ -75,7 +76,7 @@ const tradeManager = new TradeManager(
 	[
 		{
 			username: "ashintv",
-			usd_balance: 90909,
+			usd_balance: toBigIntValue(5000, 8),
 		},
 	]
 );

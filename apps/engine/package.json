@@ -10,7 +10,8 @@
 	"dependencies": {
 		"@repo/typescript-config": "workspace:*",
 		"@repo/backend-common": "workspace:*",
-		"@repo/types": "workspace:*"
+		"@repo/types": "workspace:*",
+		"@repo/utils": "workspace:*"
 	},
 	"keywords": [],
 	"author": "",

@@ -3,6 +3,7 @@ export const userRouter: Router = express.Router();
 import jwt, { JwtPayload } from "jsonwebtoken";
 import { JWT_COOKIE_SECRET, JWT_SECRET } from "@repo/backend-common/index";
 import { sendEmail } from "@repo/backend-common/mail";
+import { queueManager } from "..";
 export const users: string[] = [];
 
 //as of now only sign and signup
@@ -30,7 +31,7 @@ userRouter.post("/signin", async (req, res) => {
 	});
 });
 
-userRouter.get("/auth", (req, res) => {
+userRouter.get("/auth",async (req, res) => {
 	const { token } = req.query;
 	if (!token) {
 		res.status(401).json({ message: "No token provided" });
@@ -41,6 +42,17 @@ userRouter.get("/auth", (req, res) => {
 		const cookie = jwt.sign({ email: verify.email }, JWT_COOKIE_SECRET!);
 		res.cookie("auth_cookie", cookie);
 		res.redirect("https://www.google.com");
+		const response = await queueManager.sendToEngine({
+			req_type: "add_user",
+			username: verify.email,
+			request: cookie,
+		});
+		if (response) {
+			res.json({ response });
+			return;
+		}
+		res.status(404).send("Timeout");
+
 	} catch (e) {
 		res.status(403).json({ message: "Invalid token" });
 	}

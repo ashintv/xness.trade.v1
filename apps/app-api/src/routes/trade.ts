@@ -24,12 +24,11 @@ tradeRouter.post("/create", async (req, res) => {
 	};
 	const response = await queueManager.sendToEngine(input);
 	if (response) {
-		res.json({ response });
+		res.status(response.status!).json({ data: response.response_data, message: response.response_message });
 		return;
 	}
-	res.status(404).send("Timeout");
+	res.status(504).send("Timeout");
 });
-
 
 tradeRouter.post("/close", async (req, res) => {
 	res.setTimeout(10 * 1000, () => {

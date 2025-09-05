@@ -8,15 +8,21 @@ export type Assets = z.infer<typeof AssetScheam>;
 
 export type OpenOrder = z.infer<typeof OpenTradeSchema>;
 
-export type OpenOrders = OpenOrder & {
+export type OpenOrders = {
+    asset: Assets;
+    type: "long" | "short";
 	username: string;
-	open_price: number;
+	open_price: bigint;
 	order_id: string;
+	margin: bigint;
+	leverage: bigint;
+	slipage: bigint;
+    quantity: bigint;
 };
 
 export type Price = {
-	price: number;
-	decimal: number;
+	price: string
+	decimal: number
 } | null;
 
 export type Latest_Price = Record<Assets, Price> | null;
@@ -34,7 +40,7 @@ export type Balance = {
 
 export type UserBalance = {
 	username: string;
-	usd_balance: number;
+	usd_balance: string;
 	BTC?: number;
 	SOL?: number;
 	ETH?: number;
@@ -51,3 +57,9 @@ export type EngineInput = {
 	type: "updated_price" | "user_request";
 	data: Latest_Price | UserRequest;
 };
+
+export type EngineResponse ={
+    status: 400 | 200
+    response_data?: UserBalance | OpenOrders | string
+    response_message: string 
+}
