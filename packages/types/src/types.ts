@@ -12,12 +12,12 @@ export type OpenOrders = {
 	asset: Assets;
 	type: "long" | "short";
 	username: string;
-	open_price: bigint;
+	open_price: string;
 	order_id: string;
-	margin: bigint;
-	leverage: bigint;
-	slipage: bigint;
-	quantity: bigint;
+	margin: string;
+	leverage: string;
+	slipage: string;
+	quantity: string;
 };
 
 export type Price = {

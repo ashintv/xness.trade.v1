@@ -66,13 +66,13 @@ export class TradeManager {
 		this.openOrders.push({
 			asset: order.asset,
 			type: order.type,
-			margin: actual_margin_int,
-			leverage: leverage_int,
-			slipage: slipage_int,
+			margin: actual_margin_int.toString(),
+			leverage: leverage_int.toString(),
+			slipage: slipage_int.toString(),
 			username,
-			open_price: price_int,
+			open_price: price_int.toString()	,
 			order_id,
-			quantity: qty_int,
+			quantity: qty_int.toString(),
 		});
 		console.log(`Created order ${qty_int} for user ${username}`);
 
@@ -220,14 +220,14 @@ export class TradeManager {
 		});
 	}
 
-	
 	getSnapshot() {
+		
 		const snapshot = {
 			openOrders: this.openOrders,
 			userBalances: this.userBalances,
 			latestPrices: this.latest_prices,
 		};
-
+		console.log("Snapshot taken", snapshot);
 		return snapshot;
 	}
 }

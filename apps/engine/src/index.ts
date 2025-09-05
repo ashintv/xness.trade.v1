@@ -98,7 +98,7 @@ export class Engine_v2 {
 			const snapshot = this.trademanager.getSnapshot();
 			//optional: save to mongoose
 			await this.redisClient.set("engine_snapshot", JSON.stringify(snapshot));
-			await TradeSnapshot.create({ snapshot: JSON.stringify(snapshot) });
+			await TradeSnapshot.create(snapshot);
 			console.log("Snapshot saved");
 		}, 1000);
 	}
