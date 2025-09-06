@@ -1,6 +1,7 @@
-import { UserRequest } from "@repo/types/types";
+import { UserBalance, UserRequest } from "@repo/types/types";
 import express, { Router } from "express";
 import { queueManager } from "..";
+import { ScaleToReal } from "@repo/utils/decimal-covert";
 export const balanceRouter: Router = express.Router();
 
 balanceRouter.get("/", async (req, res) => {
@@ -13,8 +14,10 @@ balanceRouter.get("/", async (req, res) => {
 		request: "",
 	};
 	const response = await queueManager.sendToEngine(input);
+
+	const userBalance  = response?.response_data as UserBalance
 	if (response) {
-		res.json({ response });
+		res.json({ balance:ScaleToReal(userBalance.usd_balance,8), message: response.response_message });
 		return;
 	}
 });

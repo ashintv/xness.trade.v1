@@ -5,6 +5,7 @@ import {
 	EngineResponse,
 	Latest_Price,
 	OpenOrder,
+	OpenOrderRequest,
 	OpenOrders,
 	UserBalance,
 	UserRequest,
@@ -65,7 +66,7 @@ export class Engine_v2 {
 	private async handleUser(request: UserRequest) {
 		console.log(request);
 		if (request.req_type == "open_order") {
-			const order_id = this.trademanager.openOrder(request.request as OpenOrder, request.username);
+			const order_id = this.trademanager.openOrder(request.request as OpenOrderRequest, request.username);
 			await this.sendResponse(order_id);
 		} else if (request.req_type == "close_order") {
 			const balance = this.trademanager.closeOrder(request.request as string, request.username);

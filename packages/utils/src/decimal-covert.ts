@@ -25,25 +25,70 @@ export function toRealValue(value: bigint | string, decimalPlaces: number): numb
 	return Number(value) / Math.pow(10, decimalPlaces);
 }
 
-// ---- Hardcoded Test Cases ----
-const tests = [
-  { symbol: "ETH", price: "4314.77", decimals: 8, expectedBig: "431477000000", expectedReal: "4314.77000000" },
-  { symbol: "BTC", price: "109873.9", decimals: 8, expectedBig: "10987390000000", expectedReal: "109873.90000000" },
-  { symbol: "SOL", price: "204.48", decimals: 8, expectedBig: "20448000000", expectedReal: "204.48000000" },
-  // Extra edge cases
-  { symbol: "MIN", price: "0.00000001", decimals: 8, expectedBig: "1", expectedReal: "0.00000001" },
-  { symbol: "ZERO", price: "0", decimals: 8, expectedBig: "0", expectedReal: "0.00000000" },
-  { symbol: "BIG", price: "123456789.12345678", decimals: 8, expectedBig: "12345678912345678", expectedReal: "123456789.12345678" },
-];
 
-for (const t of tests) {
-  const big = toBigIntValue(t.price, t.decimals);
-  const real = toRealValue(big, t.decimals);
 
-  console.log(`${t.symbol} =>`);
-  console.log("  Price:", t.price);
-  console.log("  BigInt:", big.toString(), "| Expected:", t.expectedBig , 'status:', big.toString() === t.expectedBig ? 'PASS' : 'FAIL');
-  console.log("  Real  :", real, "| Expected:", t.expectedReal);
-  console.log("--------------------");
+
+
+/**
+ * Scales a real number to a decimal representation.
+ * @param value The value to scale.
+ * @param decimalPlaces The number of decimal places.
+ * @returns The scaled value as a string.
+ */
+export function ScaleToDecimal(value: number, decimalPlaces: number): string {
+  return BigInt(Math.round(value * Math.pow(10, decimalPlaces))).toString();
 }
 
+/**
+ * Scales a decimal number to a real representation.
+ * @param value The value to scale.
+ * @param decimalPlaces The number of decimal places.
+ * @returns The scaled value as a number.
+ */
+
+export function ScaleToReal(value: bigint | string, decimalPlaces: number): number {
+  if (typeof value === "string") value = BigInt(value);
+  return Number(value) / Math.pow(10, decimalPlaces);
+}
+
+
+
+// ---- Cross-scaling Test Cases ----
+const crossScaleTests = [
+  // Already in 2 decimals, scale to 8
+  { symbol: "USD-2→8", value: 123.45, fromDecimals: 2, toDecimals: 8, expectedScaled: "12345000000", expectedReal: 123.45 },
+  { symbol: "SMALL-2→8", value: 0.01, fromDecimals: 2, toDecimals: 8, expectedScaled: "1000000", expectedReal: 0.01 },
+
+  // Already in 8 decimals, scale down to 2
+  { symbol: "BTC-8→2", value: 109873.90000000, fromDecimals: 8, toDecimals: 2, expectedScaled: "10987390", expectedReal: 109873.9 },
+  { symbol: "SMALL-8→2", value: 0.00000001, fromDecimals: 8, toDecimals: 2, expectedScaled: "0", expectedReal: 0 },
+
+  // Already in 8 decimals, scale down to 4
+  { symbol: "ETH-8→4", value: 4314.77000000, fromDecimals: 8, toDecimals: 4, expectedScaled: "43147700", expectedReal: 4314.77 },
+  { symbol: "TEST-8→4", value: 0.12345678, fromDecimals: 8, toDecimals: 4, expectedScaled: "1234", expectedReal: 0.1234 },
+
+  // Extra large value scaling down
+  { symbol: "BIG-8→2", value: 123456789.12345678, fromDecimals: 8, toDecimals: 2, expectedScaled: "12345678912", expectedReal: 123456789.12 },
+];
+
+for (const t of crossScaleTests) {
+  // First scale up using fromDecimals
+  const big = ScaleToDecimal(t.value, t.fromDecimals);
+
+  // Now rescale manually: adjust decimals difference
+  const diff = t.toDecimals - t.fromDecimals;
+  let rescaled: bigint;
+  if (diff > 0) {
+    rescaled = BigInt(big) * BigInt(10 ** diff);
+  } else {
+    rescaled = BigInt(big) / BigInt(10 ** Math.abs(diff));
+  }
+
+  const real = ScaleToReal(rescaled, t.toDecimals);
+
+  console.log(`${t.symbol} =>`);
+  console.log("  Input:", t.value);
+  console.log("  Rescaled:", rescaled.toString(), "| Expected:", t.expectedScaled, 'status:', rescaled.toString() === t.expectedScaled ? 'PASS' : 'FAIL');
+  console.log("  Back to Real:", real, "| Expected:", t.expectedReal, 'status:', real === t.expectedReal ? 'PASS' : 'FAIL');
+  console.log("--------------------");
+}

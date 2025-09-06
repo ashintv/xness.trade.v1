@@ -48,7 +48,7 @@ export type UserBalance = {
 
 export type UserRequest = {
 	req_type: "open_order" | "close_order" | "get_balance" | "add_user";
-	request: OpenOrder | string;
+	request: OpenOrderRequest | string;
 	username: string;
 };
 
@@ -62,4 +62,13 @@ export type EngineResponse = {
 	status: 400 | 200;
 	response_data?: UserBalance | OpenOrders | string;
 	response_message: string;
+};
+
+
+export type OpenOrderRequest = {
+	asset: Assets;
+	type: "long" | "short";
+	margin: string;
+	leverage: number;
+	slipage: string;
 };
